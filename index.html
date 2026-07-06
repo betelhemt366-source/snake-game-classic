@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>classic snake game->multiplayer</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <div id="app-container">
+      
+      <!-- Animated Background Grid (Shared across menus) -->
+      <div class="bg-grid"></div>
+
+      <!-- 🎬 SPLASH SCREEN -->
+      <div id="splash-screen" class="screen active">
+        <h1 class="splash-title">AXUMIT STUDIOS</h1>
+        <div class="logo-container" id="splash-logo">
+          <div class="logo-icon"></div>
+        </div>
+        <div class="splash-loader">
+          <div class="splash-progress"></div>
+        </div>
+      </div>
+
+      <!-- 🏠 MAIN MENU -->
+      <div id="main-menu" class="screen">
+        <div class="menu-header">
+          <!-- Game Name -> Main Menu Title -->
+          <h1 class="menu-title" id="menu-game-title">classic snake game->multiplayer</h1>
+          <!-- Game Description -> Subtitle under title -->
+          <p class="menu-subtitle" id="menu-game-subtitle">
+            Classic multiplayer Snake transforms the retro solo arcade experience into a competitive battle. Players control growing snakes in a shared arena, racing to consume food while trapping rivals or forcing them to crash into obstacles. It combines nostalgic mechanics with fast-paced, real-time survival gameplay.
+          </p>
+        </div>
+
+        <div class="menu-content">
+          <!-- Configuration Card -->
+          <div class="options-panel">
+            <!-- Game Mode Selector -->
+            <div class="option-row">
+              <span class="option-label">Battle Mode</span>
+              <div class="segment-control" id="mode-control" style="width: 320px;">
+                <button class="segment-btn active" data-value="solo">VS AI</button>
+                <button class="segment-btn" data-value="duet">Local Co-op</button>
+                <button class="segment-btn" data-value="online">Online PVP</button>
+              </div>
+            </div>
+
+            <!-- Sound toggle -->
+            <div class="option-row">
+              <span class="option-label">8-Bit Sound FX</span>
+              <label class="switch">
+                <input type="checkbox" id="sound-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Large Play Button & Graphics System Trigger -->
+          <div class="menu-actions" style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 380px;">
+            <button id="start-btn" class="btn-primary" style="margin: 0; width: 100%;">
+              Start 1v1 Showdown
+            </button>
+            <button id="studio-btn" class="btn-secondary btn-secondary-blue" style="margin: 0; width: 100%; border-color: #00FFFF; color: #00FFFF; text-shadow: 0 0 8px rgba(0,255,255,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              Axumit Design Studio
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎮 GAMEPLAY SCREEN -->
+      <div id="game-screen" class="screen">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD (Heads Up Display) overlay -->
+        <div class="game-overlay hud-header">
+          <!-- Left: My Stats -->
+          <div class="hud-panel score-hud">
+            <span class="score-title">Your Score</span>
+            <span class="score-val" id="hud-score">0000</span>
+          </div>
+
+          <!-- Center: Pause and Sound togglers -->
+          <div class="control-hud">
+            <button class="hud-btn" id="hud-pause-btn" aria-label="Pause game">
+              <!-- Pause SVG Icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"></rect><rect x="6" y="4" width="4" height="16" rx="1"></rect></svg>
+            </button>
+            <button class="hud-btn" id="hud-sound-btn" aria-label="Toggle sound">
+              <!-- Speaker SVG Icon -->
+              <svg id="speaker-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07" class="sound-wave"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14" class="sound-wave"></path></svg>
+            </button>
+          </div>
+
+          <!-- Right: Live Leaderboard (Classic IO game feel) -->
+          <div class="hud-panel leaderboard-hud">
+            <div class="leaderboard-title">Live Ranking</div>
+            <div id="leaderboard-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Touch Controls (Mobile Only Overlay, shown/hidden on capability check) -->
+        <div class="game-overlay mobile-controls" id="game-touch-controls">
+          <!-- Left Side: Touch Arrow Pad (Compact & transparent) -->
+          <div class="dpad-container" id="touch-dpad">
+            <button class="dpad-btn dpad-up" id="dpad-up" aria-label="Up">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            </button>
+            <button class="dpad-btn dpad-left" id="dpad-left" aria-label="Left">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button class="dpad-btn dpad-right" id="dpad-right" aria-label="Right">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+            <button class="dpad-btn dpad-down" id="dpad-down" aria-label="Down">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="dpad-center"></div>
+          </div>
+
+          <!-- Mobile Gesture Indicator / Swipe Area helper -->
+          <div class="touch-tip">
+            Swipe anywhere to steer <br>or use D-pad
+          </div>
+
+          <!-- Right Side: Boost Button -->
+          <div class="boost-container">
+            <button class="boost-btn" id="boost-btn" aria-label="Speed Boost">
+              <!-- Bolt Icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </button>
+            <span class="boost-label">BOOST</span>
+          </div>
+        </div>
+
+        <!-- Pause Modal Modal Overlay -->
+        <div id="pause-modal" class="modal-overlay">
+          <div class="modal-card">
+            <h2 class="modal-title">Game Paused</h2>
+            <button id="resume-btn" class="btn-primary" style="height: 48px;">Resume Game</button>
+            <button id="pause-quit-btn" class="btn-secondary">Quit to Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 💀 GAME OVER SCREEN -->
+      <div id="game-over-screen" class="screen">
+        <div class="gameover-card">
+          <h1 class="gameover-title" id="gameover-title">Game Over</h1>
+          <p class="gameover-tagline" id="gameover-reason">You crashed into a wall!</p>
+
+          <!-- Performance Stats -->
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-val green" id="stat-score">0000</span>
+              <span class="stat-label">Final Score</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val blue" id="stat-length">0</span>
+              <span class="stat-label">Max Length</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val purple" id="stat-kills">0</span>
+              <span class="stat-label">Rivals Trapped</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-val yellow" id="stat-time">0:00</span>
+              <span class="stat-label">Time Alive</span>
+            </div>
+          </div>
+
+          <!-- Retry & Exit Actions -->
+          <div class="gameover-actions">
+            <button id="restart-btn" class="btn-primary">
+              Battle Again
+            </button>
+            <button id="menu-btn" class="btn-secondary btn-secondary-blue">
+              Main Menu
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎨 AXUMIT DESIGN STUDIO (GRAPHICS TASK SYSTEM) -->
+      <div id="design-studio-screen" class="screen">
+        <div class="studio-container">
+          <!-- Left Panel: Interactive Configurator -->
+          <div class="studio-sidebar">
+            <div class="studio-header">
+              <button id="studio-back-btn" class="hud-btn" aria-label="Go back to menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              </button>
+              <div>
+                <h1 class="studio-title">AXUMIT ARCADE</h1>
+                <p class="studio-subtitle">Graphics Task System</p>
+              </div>
+            </div>
+
+            <!-- Task Spec Brief Info Box -->
+            <div class="brief-card-info">
+              <div class="brief-row">
+                <span class="badge neon-cyan">Canva Strict Spec</span>
+                <button id="view-spec-btn" class="spec-text-btn">View Guidelines ↗</button>
+              </div>
+              <p class="brief-desc-text">Generate, test, and distribute pixel-perfect vertical & square assets across channels with the Axumit Content Engine.</p>
+            </div>
+
+            <!-- Selector: Poster Category -->
+            <div class="config-group">
+              <label class="config-label">1. Select Poster Type</label>
+              <div class="category-grid">
+                <button class="category-tab active" data-type="release">
+                  <span class="cat-icon">🎮</span>
+                  <div class="cat-meta">
+                    <span class="cat-name">Game Release</span>
+                    <span class="cat-desc">Promote a game</span>
+                  </div>
+                </button>
+                <button class="category-tab" data-type="announcement">
+                  <span class="cat-icon">📢</span>
+                  <div class="cat-meta">
+                    <span class="cat-name">Platform Announcement</span>
+                    <span class="cat-desc">"Arcade is Live"</span>
+                  </div>
+                </button>
+                <button class="category-tab" data-type="credit">
+                  <span class="cat-icon">🧑‍🎨</span>
+                  <div class="cat-meta">
+                    <span class="cat-name">Designer Credit</span>
+                    <span class="cat-desc">Showcase creators</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Selector: Aspect Ratio -->
+            <div class="config-group">
+              <label class="config-label">2. Size & Grid Layout</label>
+              <div class="ratio-selectors">
+                <button class="ratio-btn active" data-ratio="vertical">
+                  <div class="ratio-shape vertical"></div>
+                  <div class="ratio-info">
+                    <span class="ratio-title">Vertical Mobile</span>
+                    <span class="ratio-dims">1080 × 1920</span>
+                  </div>
+                </button>
+                <button class="ratio-btn" data-ratio="square">
+                  <div class="ratio-shape square"></div>
+                  <div class="ratio-info">
+                    <span class="ratio-title">Square Social</span>
+                    <span class="ratio-dims">1080 × 1080</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Interactive Text Customization Inputs -->
+            <div class="config-group">
+              <label class="config-label">3. Customize Metadata</label>
+              <div class="inputs-stack">
+                <div class="field-row" id="field-group-title">
+                  <span class="field-label">Game Title</span>
+                  <input type="text" id="input-game-title" value="AXUMIT SNAKE" placeholder="e.g. DODGE BLOCK">
+                </div>
+                <div class="field-row" id="field-group-tagline">
+                  <span class="field-label">Short Tagline</span>
+                  <input type="text" id="input-game-tagline" value="Survive the chaos." placeholder="1 line max tagline">
+                </div>
+                <div class="field-row" id="field-group-platform">
+                  <span class="field-label">Platform</span>
+                  <input type="text" id="input-game-platform" value="Web & Mobile" placeholder="e.g. Web / Mobile">
+                </div>
+                <div class="field-row" id="field-group-designer">
+                  <span class="field-label">Designed By</span>
+                  <input type="text" id="input-designer-tag" value="@betelhemt" placeholder="Designer username">
+                </div>
+                <div class="field-row">
+                  <span class="field-label">Visual Variant</span>
+                  <select id="select-visual-variant">
+                    <option value="cyber_grid">Neon Cyber Grid</option>
+                    <option value="snake_arena">Procedural Snake Arena</option>
+                    <option value="retro_retro">Retro Synthesizer Grid</option>
+                    <option value="hyper_minimal">Ultra Minimalist Outline</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Strategic Content Engine Mockup Selector -->
+            <div class="config-group">
+              <label class="config-label">4. Content Engine Preview (Strategic Upgrade)</label>
+              <div class="platform-selector">
+                <button class="platform-tab active" data-platform="poster">Raw Poster</button>
+                <button class="platform-tab" data-platform="instagram">Instagram</button>
+                <button class="platform-tab" data-platform="telegram">Telegram</button>
+                <button class="platform-tab" data-platform="banner">Website Banner</button>
+                <button class="platform-tab" data-platform="splash">App Splash</button>
+              </div>
+            </div>
+
+            <!-- Exporter Actions -->
+            <div class="exporter-actions">
+              <button id="download-poster-btn" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export High-Res PNG
+              </button>
+              <button id="copy-canva-btn" class="btn-secondary btn-secondary-blue">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy Editable Canva Link
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Workspace: Multi-Platform Presentation Frame -->
+          <div class="studio-workspace">
+            <!-- Dynamic context-aware status/header -->
+            <div class="workspace-header">
+              <span class="active-mode-label" id="active-preview-label">RAW POSTER VIEW</span>
+              <span class="workspace-hint">Interactive Canvas Output (Conforms to Design Specs)</span>
+            </div>
+
+            <!-- Presentation Frame Wrapper (Emulates various social viewports) -->
+            <div class="mockup-frame-outer" id="mockup-frame-outer">
+              
+              <!-- Canva Grid Alignment Guideline Overlay (optional helper lines) -->
+              <div class="grid-helper-lines" id="grid-helper-lines">
+                <div class="helper-line line-top"><span>Logo Zone (15%)</span></div>
+                <div class="helper-line line-mid"><span>Visual Focus (60%)</span></div>
+                <div class="helper-line line-bot"><span>CTA / Credits (25%)</span></div>
+              </div>
+
+              <!-- Real-time dynamically drawn poster canvas -->
+              <canvas id="poster-canvas" width="1080" height="1920"></canvas>
+
+              <!-- Social Interface Overlay: INSTAGRAM -->
+              <div class="social-overlay instagram-overlay" id="instagram-overlay">
+                <div class="social-header">
+                  <div class="user-avatar">AS</div>
+                  <div class="user-meta">
+                    <span class="user-name">axumit_studios</span>
+                    <span class="user-location">Addis Ababa, Ethiopia</span>
+                  </div>
+                  <span class="more-options">•••</span>
+                </div>
+                <!-- Interactive Actions -->
+                <div class="social-footer">
+                  <div class="social-actions">
+                    <span class="action-item active">❤️ 1,248</span>
+                    <span class="action-item">💬 48</span>
+                    <span class="action-item">✈️</span>
+                  </div>
+                  <p class="social-caption"><strong>axumit_studios</strong> Get ready! Our brand-new retro release is dropping soon. Are you ready to survive the chaos? 🚀🔥 #AxumitArcade #IndieDev</p>
+                </div>
+              </div>
+
+              <!-- Social Interface Overlay: TELEGRAM -->
+              <div class="social-overlay telegram-overlay" id="telegram-overlay">
+                <div class="telegram-bubble">
+                  <div class="telegram-meta">
+                    <span class="channel-name">Axumit Studios Announcements</span>
+                  </div>
+                  <div class="telegram-caption">
+                    📢 <strong>AXUMIT ARCADE IS LIVE!</strong><br><br>
+                    Experience 20+ retro & modern arcade games with fast loading, simple mechanics, and competitive leaderboards.<br><br>
+                    👉 <strong>Play now</strong> inside your browser or Telegram bot!
+                  </div>
+                  <div class="telegram-actions">
+                    <button class="tg-inline-btn">🎮 Play Instantly</button>
+                  </div>
+                  <span class="telegram-time">10:48 AM</span>
+                </div>
+              </div>
+
+              <!-- Social Interface Overlay: WEBSITE BANNER MOCKUP -->
+              <div class="social-overlay banner-overlay" id="banner-overlay">
+                <div class="banner-top-bar">
+                  <span class="brand-text">AXUMIT PLATFORM</span>
+                  <div class="nav-links">
+                    <span>Games</span>
+                    <span>Tournaments</span>
+                    <span>Creators</span>
+                  </div>
+                  <button class="btn-play-mini">Launch Arcade</button>
+                </div>
+                <div class="banner-badge">FEATURED EVENT</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast">Link copied to clipboard!</div>
+      </div>
+
+      <!-- 🌐 ONLINE MATCHMAKING OVERLAY -->
+      <div id="matchmaking-overlay" class="modal-overlay">
+        <div class="modal-card matchmaking-card">
+          <div class="matchmaking-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring-inner"></div>
+            <div class="spinner-logo">⚡</div>
+          </div>
+          <h2 class="modal-title matchmaking-title">Searching for Opponent...</h2>
+          <p class="matchmaking-subtitle">Waiting for a challenger to join the arena...</p>
+          
+          <div class="waiting-timer">Time elapsed: <span id="matchmaking-timer">0s</span></div>
+
+          <div class="matchmaking-actions">
+            <button id="cancel-matchmaking-btn" class="btn-secondary">
+              Cancel Search
+            </button>
+            <button id="matchmaking-ai-btn" class="btn-primary" style="display: none; margin-top: 10px;">
+              Play vs AI Instead
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 📢 MANDATORY CANVA TEMPLATE SPECIFICATION OVERLAY MODAL -->
+      <div id="spec-modal" class="modal-overlay">
+        <div class="spec-modal-card">
+          <div class="spec-modal-header">
+            <h2 class="spec-modal-title">📐 CANVA GRAPHICS SPECIFICATION</h2>
+            <button id="close-spec-btn" class="close-modal-btn">✕</button>
+          </div>
+          <div class="spec-modal-body">
+            
+            <div class="spec-section">
+              <h3 class="section-heading">🔥 MANDATORY POSTER TYPES</h3>
+              <div class="spec-grid">
+                <div class="spec-item-box">
+                  <strong class="item-title cyan-text">1. 🎮 Game Release Poster</strong>
+                  <p>Promote individual games. Must feature: Top Axumit Studios Logo, center Game Title (BIG/dominant), authentic gameplay-style dynamic illustration, short tagline (1 line max), "Play Now" CTA, and Web/Mobile platform tags.</p>
+                </div>
+                <div class="spec-item-box">
+                  <strong class="item-title cyan-text">2. 📢 Announcement Poster</strong>
+                  <p>Promote the overall arcade platform. Headline: "AXUMIT ARCADE IS LIVE". Subtext: "20+ Arcade Games. Fast. Simple. Addictive." featuring a visual grid of previews or abstract neon arcade vectors.</p>
+                </div>
+                <div class="spec-item-box">
+                  <strong class="item-title cyan-text">3. 🧑‍🎨 Designer Credit Poster</strong>
+                  <p>Mandatory. Credits go cleanly under the poster background or as a footer section: "Designed by: @username | Axumit Studios Creative Team". Never break visual hierarchy with giant credit text.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-section">
+              <h3 class="section-heading">📐 CANVA SPEC & LAYOUT GRID</h3>
+              <div class="spec-details-list">
+                <div class="spec-detail">
+                  <strong>Pristine Dimensions:</strong>
+                  <span>Main Vertical Aspect Ratio: <strong>1080 × 1920 (9:16)</strong> for Mobile Stories/Reels. Square aspect ratio export: <strong>1080 × 1080 (1:1)</strong> for static posts.</span>
+                </div>
+                <div class="spec-detail">
+                  <strong>Golden Layout Grid (Strict):</strong>
+                  <span><strong>Top (15%)</strong> Zone: Axumit Branding Logo. <br><strong>Middle (60%)</strong> Zone: Main Game Title + Rich Procedural Vector Visuals. <br><strong>Bottom (25%)</strong> Zone: Direct Action CTA ("Play Now") and Designer Credits.</span>
+                </div>
+                <div class="spec-detail">
+                  <strong>Official Palette:</strong>
+                  <span>Background solid <strong>#0A0A0A</strong>. Primary accent <strong>Neon Cyan (#00FFFF)</strong>. High-contrast supporting accent <strong>Neon Purple & Cyber Blue</strong>.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="spec-section mistakes-section">
+              <h3 class="section-heading error-heading">⚠️ COMMON DESIGN MISTAKES (REJECT IMMEDIATELY)</h3>
+              <ul class="mistakes-list">
+                <li>❌ Too many discordant colors (Stick tightly to #00FFFF, Neon Purple, and dark gray).</li>
+                <li>❌ Generic low-fidelity stock images (Use only authentic geometric gameplay visualizers).</li>
+                <li>❌ Missing focal point or small, unreadable, low-contrast typography.</li>
+                <li>❌ Over-designed pre-built Canva templates with generic template junk.</li>
+                <li>❌ Inconsistent branding or missing mandatory designer signatures in footers.</li>
+              </ul>
+            </div>
+
+            <div class="spec-section upgrade-section">
+              <h3 class="section-heading upgrade-heading">🚀 STRATEGIC CONTENT ENGINE</h3>
+              <p>Each poster is generated with cross-platform scalability. Toggle the preview sidebar in the workspace to instantly mock up how each graphic renders natively as an Instagram Story post, Telegram Channel bulletin, website feature banner, or arcade splash screen preview!</p>
+            </div>
+
+          </div>
+          <div class="spec-modal-footer">
+            <button id="ack-spec-btn" class="btn-primary">Acknowledge Specification</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Script loading -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>

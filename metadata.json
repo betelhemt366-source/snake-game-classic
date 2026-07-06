@@ -1,0 +1,6 @@
+{
+  "name": "Classic Multiplayer Snake",
+  "description": "Classic multiplayer Snake transforms the retro solo arcade experience into a competitive battle. Players control growing snakes in a shared arena, racing to consume food while trapping rivals or forcing them to crash into obstacles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
